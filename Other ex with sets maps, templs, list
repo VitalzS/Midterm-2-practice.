@@ -1,0 +1,65 @@
+#include <iostream>
+#include <string>
+#include <set>
+#include <map>
+#include <list>
+#include <algorithm>
+using namespace std;
+
+// Book class with comparison operator for set
+class Book {
+public:
+    string title;
+    string author;
+
+    Book(string t, string a) : title(t), author(a) {}
+
+    // Set uses this to ensure uniqueness (sorted by author, then title)
+    bool operator<(const Book& other) const {
+        return tie(author, title) < tie(other.author, other.title);
+    }
+};
+
+// Template function to display any container
+template <typename Container>
+void displayItems(const Container& container, const string& label) {
+    cout << "\n" << label << ":\n";
+    for (const auto& item : container) {
+        cout << item << endl;
+    }
+}
+
+int main() {
+    // Set for unique books
+    set<Book> bookSet = {
+        Book("1984", "George Orwell"),
+        Book("Brave New World", "Aldous Huxley"),
+        Book("Animal Farm", "George Orwell"),
+        Book("Fahrenheit 451", "Ray Bradbury"),
+        Book("1984", "George Orwell") // duplicate, won't be added
+    };
+
+    // Map for counting books per author
+    map<string, int> bookCount;
+    for (const auto& book : bookSet) {
+        bookCount[book.author]++;
+    }
+
+    // List for ordered processing (e.g., display in insertion order)
+    list<string> readingList = {
+        "Animal Farm",
+        "Fahrenheit 451",
+        "1984"
+    };
+
+    // Display authors from the map
+    cout << "\nBooks per Author:\n";
+    for (const auto& pair : bookCount) {
+        cout << pair.first << ": " << pair.second << " book(s)\n";
+    }
+
+    // Use template function to display the reading list
+    displayItems(readingList, "Reading List");
+
+    return 0;
+}
