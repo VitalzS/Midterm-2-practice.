@@ -1,0 +1,358 @@
+// C18-RAW-Doubly-Linked-List-GOOD.cpp 
+/*
+This program implements a generic doubly linked list in C++ with support 
+for common operations like insertion, deletion, and traversal, and 
+demonstrates its functionality using both integers and a custom Person struct.
+
+Future Work
+- Reverse
+- Sort
+- Merge
+- Splice
+- Iterator Support
+- Copy Constructor & Assignment Operator
+- Index-based Access
+- Exception Safety
+- Boundary Checks
+- Memory Leaks
+
+*/
+
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <list>
+using namespace std;
+
+// Global flag for debugging purposes to show deleted objects
+bool deleteflag = false;
+
+// Struct representing a Person with a name and age
+struct Person
+{
+	string name; // Name of the person
+	int age;     // Age of the person
+
+	// Constructor with default values
+	Person(string n = "NoName", int a = 0) : name(n), age(a) {};
+
+	// Overload operator< for comparison based on name
+	bool operator< (const Person& other) const {
+		return this->name < other.name;
+	}
+
+	// Overload operator== for equality comparison based on name
+	bool operator==(const Person& other) const {
+		return this->name == other.name;
+	}
+
+	// Overload operator<< for outputting a Person object
+	friend ostream& operator<< (ostream& sout, const Person& p) {
+		sout << " Person[Name: " << p.name << ", Age: " << p.age << "]";
+		return sout;
+	}
+};
+
+//----------------------------------------------------------------------------------------
+// Template struct representing a Node in a doubly linked list
+//----------------------------------------------------------------------------------------
+template <typename T>
+struct Node
+{
+	// Precondition: The T type must overload operator<, operator<<, and operator==
+
+	Node<T>* prev; // Pointer to the previous node
+	Node<T>* next; // Pointer to the next node
+	T data;        // Value stored in this node
+
+	// Constructor with default values
+	Node(T dataValue = {}, Node<T>* nextValue = nullptr, Node<T>* prevValue = nullptr)
+		: data(dataValue), next(nextValue), prev(prevValue) {
+	}
+
+	// Overload operator< to compare two Node<T> objects based on their data
+	friend bool operator< (const Node<T>& lhs, const Node<T>& rhs) {
+		return lhs.data < rhs.data;
+	}
+
+	// Overload operator<< to output a Node<T> object
+	friend ostream& operator<< (ostream& sout, const Node<T>& n) {
+		sout << &n << " prev: " << n.prev << ", next: " << n.next
+			<< ", data: " << n.data;
+		return sout;
+	}
+
+	// Overload operator== to compare two Node<T> objects for equality
+	friend bool operator== (const Node<T>& lhs, const Node<T>& rhs) {
+		cout << "operator== was called!" << endl;
+		return lhs.data == rhs.data;
+	}
+};
+
+//----------------------------------------------------------------------------------------
+// Template class representing a Doubly Linked List
+template <typename T>
+class DLinkedList {
+private:
+	Node<T>* head; // Pointer to the head of the list
+	Node<T>* tail; // Pointer to the tail of the list
+	int size;      // Number of elements in the list
+
+public:
+	// Constructor to initialize an empty list
+	DLinkedList() : head(nullptr), tail(nullptr), size(0) {}
+
+	// Destructor to clean up memory
+	~DLinkedList() {
+		Node<T>* current = head;
+		while (current != nullptr) {
+			Node<T>* nextNode = current->next; // Save the next node
+			delete current;                   // Delete the current node
+			if (deleteflag) cout << "deleting " << current << endl;
+			current = nextNode;               // Move to the next node
+		}
+		head = tail = nullptr;                // Reset head and tail to nullptr
+		size = 0;                             // Reset size to 0
+	}
+
+	// Returns the data at the front of the list
+	T front() {
+		if (head != nullptr)
+			return head->data;
+		else
+			throw exception("front() called on an empty list");
+	}
+
+	// Returns the data at the back of the list
+	T back() {
+		if (tail != nullptr)
+			return tail->data;
+		else
+			throw exception("back() called on an empty list");
+	}
+
+	// Adds a new element to the front of the list
+	void push_front(T newData) {
+		Node<T>* newnode = new Node<T>(newData); // Create a new node
+		size++;
+		if (head == nullptr) { // If the list is empty
+			head = tail = newnode;
+		}
+		else { // Insert at the front
+			newnode->next = head;
+			head->prev = newnode;
+			head = newnode;
+		}
+	}
+
+	// Adds a new element to the back of the list
+	void push_back(T newData) {
+		Node<T>* newnode = new Node<T>(newData); // Create a new node
+		size++;
+		if (tail == nullptr) { // If the list is empty
+			head = tail = newnode;
+		}
+		else { // Insert at the back
+			newnode->prev = tail;
+			tail->next = newnode;
+			tail = newnode;
+		}
+	}
+
+	// Removes the front element of the list
+	void pop_front() {
+		if (size == 0) throw exception("pop_front() called on an empty list");
+
+		if (size == 1) { // If there's only one element
+			delete head;
+			head = tail = nullptr;
+		}
+		else { // Remove the front element
+			Node<T>* oldhead = head;
+			head = head->next;
+			head->prev = nullptr;
+			delete oldhead;
+		}
+		size--;
+	}
+
+	// Removes the back element of the list
+	void pop_back() {
+		if (size == 0) throw exception("pop_back() called on an empty list");
+
+		if (size == 1) { // If there's only one element
+			delete head;
+			head = tail = nullptr;
+		}
+		else { // Remove the back element
+			Node<T>* oldtail = tail;
+			tail->prev->next = nullptr;
+			tail = tail->prev;
+			delete oldtail;
+		}
+		size--;
+	}
+
+	// Inserts a new element before the specified node
+	void insert(Node<T>* targetptr, T newdata) {
+		size++;
+		if (targetptr == head) { // Insert before the head
+			push_front(newdata);
+			return;
+		}
+
+		// Insert as an interior node
+		Node<T>* beforetarget = targetptr->prev;
+		Node<T>* newnode = new Node<T>(newdata);
+
+		newnode->prev = beforetarget;
+		newnode->next = targetptr;
+
+		beforetarget->next = newnode;
+		targetptr->prev = newnode;
+	}
+
+	// Erases the node with the specified key
+	bool erase(T key) {
+		Node<T>* tobedeleted = find(key);
+		if (tobedeleted == nullptr) return false;
+
+		size--;
+		if (tobedeleted == head) { // Deleting the head
+			pop_front();
+			return true;
+		}
+		if (tobedeleted == tail) { // Deleting the tail
+			pop_back();
+			return true;
+		}
+
+		// Deleting an interior node
+		tobedeleted->prev->next = tobedeleted->next;
+		tobedeleted->next->prev = tobedeleted->prev;
+		delete tobedeleted;
+		return true;
+	}
+
+	// Finds a node with the specified value
+	Node<T>* find(T searchValue) {
+		Node<T>* curr = head;
+		while (curr != nullptr) {
+			if (curr->data == searchValue)
+				return curr;
+			else
+				curr = curr->next;
+		}
+		return nullptr;
+	}
+
+	// Displays the list with an optional caption
+	void showList(string caption = "", bool newLineAfter = true) {
+		cout << endl << caption << endl;
+		cout << "List size: " << size << " head: " << head << ", tail: " << tail << endl;
+		Node<T>* curr = head;
+		while (curr != nullptr) {
+			cout << *curr;
+			if (newLineAfter) cout << endl;
+			curr = curr->next;
+		}
+		cout << endl;
+	}
+};
+
+// ---------------------------------------------------------------------
+// Experiment 1: Demonstrates basic operations on a list of integers
+void experiment01()
+{
+	DLinkedList<int> mylst;
+	mylst.showList("Original list");
+
+	mylst.push_front(11);
+	mylst.push_front(22);
+	mylst.push_front(33);
+	mylst.showList("After inserting three elements");
+
+	mylst.push_back(44);
+	mylst.push_back(55);
+	mylst.push_back(66);
+	mylst.showList("After three push back ops");
+
+	int n1 = mylst.front();
+	cout << "Leading element is: " << n1 << endl;
+	mylst.pop_front();
+	mylst.showList("After pop front");
+
+	int n2 = mylst.back();
+	cout << "Trailing element is " << n2 << endl;
+	mylst.pop_back();
+	mylst.showList("After pop back");
+
+	// Testing the == operator
+	if (n1 == n2) {
+		cout << "DIFFERENT nodes" << endl;
+	}
+
+	if (n1 == n1) {
+		cout << "SAME nodes" << endl;
+	}
+
+	// Testing delete(value)
+	int key = 11;
+	bool done = mylst.erase(key);
+	cout << "Erase flag result " << done << endl;
+	mylst.showList("After erasing " + to_string(key));
+
+	// Testing the .find() method
+	key = 55;
+	Node<int>* ptr = mylst.find(key);
+	if (ptr == nullptr) {
+		cout << key << " not found in the list" << endl;
+	}
+	else {
+		cout << key << " was found at location " << ptr << endl;
+		cout << "Node " << ptr << endl;
+		cout << "Node " << *ptr << endl;
+	}
+
+	// Testing insert before given pointer
+	mylst.insert(ptr, 33);
+	mylst.showList("After inserting 33");
+}
+
+//------------------------------------------------------------------------
+// Experiment 2: Demonstrates operations on a list of Person objects
+void experiment02() {
+	Person p1("Homer", 39);
+	Person p2("Marge", 36);
+	Person p3("Lisa", 10);
+
+	DLinkedList<Person> plst;
+	plst.push_back(p1);
+	plst.push_back(p2);
+	plst.push_back(p3);
+	plst.showList("After inserting three people");
+
+	Node<Person>* ptr = plst.find(Person("Marge"));
+	cout << "Pointer returned when searching for Marge " << ptr << endl;
+	cout << "Dereferencing the pointer: \n" << *ptr << endl;
+
+	plst.push_front(Person("Maggie", 1));
+	plst.showList("After adding Maggie to the front");
+
+	cout << "Show front node => " << plst.front() << endl;
+
+	ptr = plst.find(Person("Lisa"));
+	plst.insert(ptr, Person("Bart", 10));
+	plst.showList("After adding Bart in front of Lisa");
+
+	deleteflag = true; // Enable flag to show memory cleanup
+}
+
+//-----------------------------------------------------------------------
+// Main function to run experiments
+int main()
+{
+	//experiment01();
+	experiment02();
+	cout << "\nAll done!\n";
+}
