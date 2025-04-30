@@ -1,0 +1,102 @@
+#include <iostream>
+#include <string>
+#include <set>
+#include <map>
+#include <list>
+#include <algorithm>
+
+using namespace std;
+
+// Song class with comparison operator
+class Song {
+public:
+    string title;
+    string artist;
+
+    Song(string t, string a) : title(t), artist(a) {}
+
+    // Needed for storing in set (avoid duplicates)
+    bool operator<(const Song& other) const {
+        return tie(artist, title) < tie(other.artist, other.title);
+    }
+};
+
+// Function to display unique artists
+void displayUniqueArtists(const set<Song>& library) {
+    set<string> artists;
+    for (const auto& song : library) {
+        artists.insert(song.artist);
+    }
+
+    cout << "\nUnique Artists:\n";
+    for (const auto& artist : artists) {
+        cout << artist << endl;
+    }
+}
+
+// Function to display song count per artist
+void displaySongCount(const set<Song>& library) {
+    map<string, int> countMap;
+    for (const auto& song : library) {
+        countMap[song.artist]++;
+    }
+
+    cout << "\nSongs per Artist:\n";
+    for (const auto& pair : countMap) {
+        cout << pair.first << ": " << pair.second << " song(s)" << endl;
+    }
+}
+
+// Function to search for songs by artist
+void searchByArtist(const set<Song>& library) {
+    string searchArtist;
+    while (true) {
+        cout << "\nEnter artist name to search (or type EXIT to stop): ";
+        getline(cin, searchArtist);
+        if (searchArtist == "EXIT") break;
+
+        bool found = false;
+        for (const auto& song : library) {
+            if (song.artist == searchArtist) {
+                if (!found) {
+                    cout << "Songs by " << searchArtist << ":\n";
+                }
+                cout << "- " << song.title << endl;
+                found = true;
+            }
+        }
+        if (!found) {
+            cout << "No songs found for artist: " << searchArtist << endl;
+        }
+    }
+}
+
+int main() {
+    set<Song> library; // Set to store unique songs
+    string title, artist;
+
+    cout << "Enter song information. Type 'STOP' as the title to end.\n";
+    while (true) {
+        cout << "\nEnter song title: ";
+        getline(cin, title);
+        if (title == "STOP") break;
+
+        cout << "Enter artist name: ";
+        getline(cin, artist);
+
+        Song newSong(title, artist);
+        if (library.find(newSong) != library.end()) {
+            cout << "Duplicate song. Not added.\n";
+        }
+        else {
+            library.insert(newSong);
+            cout << "Song added.\n";
+        }
+    }
+
+    displayUniqueArtists(library);
+    displaySongCount(library);
+    searchByArtist(library);
+
+    return 0;
+}
